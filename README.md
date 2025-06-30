@@ -75,10 +75,12 @@ For other platforms:
 
 ### Installing via Smithery
 
+⚠️ **Note**: Smithery indexing is pending for newly published packages. If the command below fails with "Server not found", use the npm method above instead.
+
 To install Excel MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/ms-excel-mcp-server):
 
 ```bash
-npx -y @smithery/cli install @vKenjo/ms-excel-mcp-server --client claude
+npx -y @smithery/cli install ms-excel-mcp-server --client claude
 ```
 
 <h2 id="tools">Tools</h2>
