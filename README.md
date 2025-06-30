@@ -78,7 +78,7 @@ For other platforms:
 To install Excel MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@negokaz/excel-mcp-server):
 
 ```bash
-npx -y @smithery/cli install @negokaz/excel-mcp-server --client claude
+npx -y @smithery/cli install @vKenjo/excel-mcp-server --client claude
 ```
 
 <h2 id="tools">Tools</h2>
