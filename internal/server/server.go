@@ -25,6 +25,10 @@ func New(version string) *ExcelServer {
 	tools.AddExcelWriteToSheetTool(s.server)
 	tools.AddExcelCreateTableTool(s.server)
 	tools.AddExcelCopySheetTool(s.server)
+	tools.AddExcelAddDataValidationTool(s.server)
+	tools.AddExcelAddConditionalFormattingTool(s.server)
+	tools.AddExcelExecuteVBATool(s.server)
+	tools.AddExcelAddVBAModuleTool(s.server)
 	return s
 }
 

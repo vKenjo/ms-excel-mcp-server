@@ -47,6 +47,14 @@ type Worksheet interface {
 	AddTable(tableRange, tableName string) error
 	// GetCellStyle gets style information for the specified cell.
 	GetCellStyle(cell string) (*CellStyle, error)
+	// AddDataValidation adds data validation to the specified range with dropdown options.
+	AddDataValidation(cellRange string, validationType DataValidationType, options *DataValidationOptions) error
+	// AddConditionalFormatting adds conditional formatting to the specified range.
+	AddConditionalFormatting(cellRange string, conditions *ConditionalFormattingConditions) error
+	// ExecuteVBA executes VBA code on this worksheet.
+	ExecuteVBA(vbaCode string) error
+	// AddVBAModule adds a VBA module to the workbook.
+	AddVBAModule(moduleName, vbaCode string) error
 }
 
 type Table struct {
@@ -237,4 +245,116 @@ var fillShadingNames = map[FillShadingName]string{
 	FillShadingDiagonalUp:   "diagonalUp",
 	FillShadingFromCenter:   "fromCenter",
 	FillShadingFromCorner:   "fromCorner",
+}
+
+// DataValidationType represents types of data validation
+type DataValidationType int
+
+const (
+	DataValidationList DataValidationType = iota
+	DataValidationWhole
+	DataValidationDecimal
+	DataValidationDate
+	DataValidationTime
+	DataValidationTextLength
+	DataValidationCustom
+)
+
+var dataValidationTypeNames = map[DataValidationType]string{
+	DataValidationList:       "list",
+	DataValidationWhole:      "whole",
+	DataValidationDecimal:    "decimal",
+	DataValidationDate:       "date",
+	DataValidationTime:       "time",
+	DataValidationTextLength: "textLength",
+	DataValidationCustom:     "custom",
+}
+
+func (d DataValidationType) String() string {
+	if name, exists := dataValidationTypeNames[d]; exists {
+		return name
+	}
+	return "list"
+}
+
+func (d DataValidationType) MarshalText() ([]byte, error) {
+	return []byte(d.String()), nil
+}
+
+// DataValidationOptions contains options for data validation
+type DataValidationOptions struct {
+	// For list validation
+	DropdownList []string `yaml:"dropdownList,omitempty"`
+	// For range/formula validation
+	Formula1 string `yaml:"formula1,omitempty"`
+	Formula2 string `yaml:"formula2,omitempty"`
+	// Validation operator (between, notBetween, equal, notEqual, etc.)
+	Operator string `yaml:"operator,omitempty"`
+	// Error handling
+	ShowErrorMessage bool   `yaml:"showErrorMessage,omitempty"`
+	ErrorTitle       string `yaml:"errorTitle,omitempty"`
+	ErrorMessage     string `yaml:"errorMessage,omitempty"`
+	// Input message
+	ShowInputMessage bool   `yaml:"showInputMessage,omitempty"`
+	InputTitle       string `yaml:"inputTitle,omitempty"`
+	InputMessage     string `yaml:"inputMessage,omitempty"`
+}
+
+// ConditionalFormattingConditions contains conditions for conditional formatting
+type ConditionalFormattingConditions struct {
+	Type       string                      `yaml:"type"`     // cellValue, expression, colorScale, dataBar, iconSet
+	Criteria   string                      `yaml:"criteria"` // greaterThan, lessThan, between, equal, etc.
+	Value1     string                      `yaml:"value1,omitempty"`
+	Value2     string                      `yaml:"value2,omitempty"`
+	Formula    string                      `yaml:"formula,omitempty"`
+	Format     *ConditionalFormattingStyle `yaml:"format,omitempty"`
+	ColorScale *ColorScaleOptions          `yaml:"colorScale,omitempty"`
+	DataBar    *DataBarOptions             `yaml:"dataBar,omitempty"`
+	IconSet    *IconSetOptions             `yaml:"iconSet,omitempty"`
+}
+
+// ConditionalFormattingStyle defines the formatting to apply
+type ConditionalFormattingStyle struct {
+	Font   *FontStyle    `yaml:"font,omitempty"`
+	Fill   *FillStyle    `yaml:"fill,omitempty"`
+	Border []BorderStyle `yaml:"border,omitempty"`
+}
+
+// ColorScaleOptions for color scale conditional formatting
+type ColorScaleOptions struct {
+	MinType  string `yaml:"minType"` // num, percent, percentile, formula, min, max
+	MinValue string `yaml:"minValue,omitempty"`
+	MinColor string `yaml:"minColor"`
+	MidType  string `yaml:"midType,omitempty"`
+	MidValue string `yaml:"midValue,omitempty"`
+	MidColor string `yaml:"midColor,omitempty"`
+	MaxType  string `yaml:"maxType"`
+	MaxValue string `yaml:"maxValue,omitempty"`
+	MaxColor string `yaml:"maxColor"`
+}
+
+// DataBarOptions for data bar conditional formatting
+type DataBarOptions struct {
+	MinType     string `yaml:"minType"`
+	MinValue    string `yaml:"minValue,omitempty"`
+	MaxType     string `yaml:"maxType"`
+	MaxValue    string `yaml:"maxValue,omitempty"`
+	Color       string `yaml:"color"`
+	ShowValue   bool   `yaml:"showValue"`
+	BarBorder   bool   `yaml:"barBorder,omitempty"`
+	BorderColor string `yaml:"borderColor,omitempty"`
+}
+
+// IconSetOptions for icon set conditional formatting
+type IconSetOptions struct {
+	IconStyle string            `yaml:"iconStyle"` // 3Arrows, 3ArrowsGray, 3Flags, etc.
+	ShowValue bool              `yaml:"showValue"`
+	Reverse   bool              `yaml:"reverse,omitempty"`
+	Icons     []IconSetCriteria `yaml:"icons,omitempty"`
+}
+
+// IconSetCriteria defines criteria for each icon in the set
+type IconSetCriteria struct {
+	Type  string `yaml:"type"` // num, percent, percentile, formula
+	Value string `yaml:"value"`
 }

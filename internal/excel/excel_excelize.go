@@ -313,7 +313,7 @@ func convertExcelizeStyleToCellStyle(style *excelize.Style) *CellStyle {
 	if style.DecimalPlaces != nil && *style.DecimalPlaces != 0 {
 		result.DecimalPlaces = *style.DecimalPlaces
 	}
-	
+
 	return result
 }
 
@@ -419,4 +419,226 @@ func (w *ExcelizeWorksheet) updateDimension(updatedCell string) error {
 	}
 	updatedDimension := fmt.Sprintf("%s:%s", startRange, endRange)
 	return w.file.SetSheetDimension(w.sheetName, updatedDimension)
+}
+
+// AddDataValidation adds data validation to the specified range
+func (w *ExcelizeWorksheet) AddDataValidation(cellRange string, validationType DataValidationType, options *DataValidationOptions) error {
+	if options == nil {
+		return fmt.Errorf("data validation options cannot be nil")
+	}
+
+	dv := excelize.NewDataValidation(true)
+	dv.SetSqref(cellRange)
+
+	switch validationType {
+	case DataValidationList:
+		if len(options.DropdownList) > 0 {
+			dv.SetDropList(options.DropdownList)
+		}
+	case DataValidationWhole:
+		if options.Formula1 != "" {
+			operator := getExcelizeOperator(options.Operator)
+			dv.SetRange(options.Formula1, options.Formula2, excelize.DataValidationTypeWhole, operator)
+		}
+	case DataValidationDecimal:
+		if options.Formula1 != "" {
+			operator := getExcelizeOperator(options.Operator)
+			dv.SetRange(options.Formula1, options.Formula2, excelize.DataValidationTypeDecimal, operator)
+		}
+	case DataValidationDate:
+		if options.Formula1 != "" {
+			operator := getExcelizeOperator(options.Operator)
+			dv.SetRange(options.Formula1, options.Formula2, excelize.DataValidationTypeDate, operator)
+		}
+	case DataValidationTime:
+		if options.Formula1 != "" {
+			operator := getExcelizeOperator(options.Operator)
+			dv.SetRange(options.Formula1, options.Formula2, excelize.DataValidationTypeTime, operator)
+		}
+	case DataValidationTextLength:
+		if options.Formula1 != "" {
+			operator := getExcelizeOperator(options.Operator)
+			dv.SetRange(options.Formula1, options.Formula2, excelize.DataValidationTypeTextLength, operator)
+		}
+	case DataValidationCustom:
+		if options.Formula1 != "" {
+			operator := getExcelizeOperator(options.Operator)
+			dv.SetRange(options.Formula1, options.Formula2, excelize.DataValidationTypeCustom, operator)
+		}
+	}
+
+	// Set input and error messages if provided
+	if options.ShowInputMessage && options.InputTitle != "" {
+		dv.SetInput(options.InputTitle, options.InputMessage)
+	}
+	if options.ShowErrorMessage && options.ErrorTitle != "" {
+		dv.SetError(excelize.DataValidationErrorStyleStop, options.ErrorTitle, options.ErrorMessage)
+	}
+
+	return w.file.AddDataValidation(w.sheetName, dv)
+}
+
+// getExcelizeOperator converts string operator to excelize operator
+func getExcelizeOperator(operator string) excelize.DataValidationOperator {
+	switch operator {
+	case "between":
+		return excelize.DataValidationOperatorBetween
+	case "notBetween":
+		return excelize.DataValidationOperatorNotBetween
+	case "equal":
+		return excelize.DataValidationOperatorEqual
+	case "notEqual":
+		return excelize.DataValidationOperatorNotEqual
+	case "greaterThan":
+		return excelize.DataValidationOperatorGreaterThan
+	case "lessThan":
+		return excelize.DataValidationOperatorLessThan
+	case "greaterThanOrEqual":
+		return excelize.DataValidationOperatorGreaterThanOrEqual
+	case "lessThanOrEqual":
+		return excelize.DataValidationOperatorLessThanOrEqual
+	default:
+		return excelize.DataValidationOperatorBetween
+	}
+}
+
+// AddConditionalFormatting adds conditional formatting to the specified range
+func (w *ExcelizeWorksheet) AddConditionalFormatting(cellRange string, conditions *ConditionalFormattingConditions) error {
+	if conditions == nil {
+		return fmt.Errorf("conditional formatting conditions cannot be nil")
+	}
+
+	var cf []excelize.ConditionalFormatOptions
+
+	switch conditions.Type {
+	case "cellValue":
+		format := excelize.ConditionalFormatOptions{
+			Type:     "cell",
+			Criteria: conditions.Criteria,
+			Value:    conditions.Value1,
+		}
+
+		if conditions.Value2 != "" {
+			format.Value = conditions.Value1 + "," + conditions.Value2
+		}
+
+		if conditions.Format != nil {
+			styleID, err := w.createStyleFromFormat(conditions.Format)
+			if err == nil {
+				format.Format = &styleID
+			}
+		}
+
+		cf = append(cf, format)
+
+	case "expression":
+		format := excelize.ConditionalFormatOptions{
+			Type:     "formula",
+			Criteria: conditions.Formula,
+		}
+
+		if conditions.Format != nil {
+			styleID, err := w.createStyleFromFormat(conditions.Format)
+			if err == nil {
+				format.Format = &styleID
+			}
+		}
+
+		cf = append(cf, format)
+
+	case "colorScale":
+		if conditions.ColorScale != nil {
+			format := excelize.ConditionalFormatOptions{
+				Type:     "2_color_scale",
+				MinType:  conditions.ColorScale.MinType,
+				MinValue: conditions.ColorScale.MinValue,
+				MinColor: conditions.ColorScale.MinColor,
+				MaxType:  conditions.ColorScale.MaxType,
+				MaxValue: conditions.ColorScale.MaxValue,
+				MaxColor: conditions.ColorScale.MaxColor,
+			}
+
+			if conditions.ColorScale.MidColor != "" {
+				format.Type = "3_color_scale"
+				format.MidType = conditions.ColorScale.MidType
+				format.MidValue = conditions.ColorScale.MidValue
+				format.MidColor = conditions.ColorScale.MidColor
+			}
+
+			cf = append(cf, format)
+		}
+
+	case "dataBar":
+		if conditions.DataBar != nil {
+			format := excelize.ConditionalFormatOptions{
+				Type:     "data_bar",
+				MinType:  conditions.DataBar.MinType,
+				MinValue: conditions.DataBar.MinValue,
+				MaxType:  conditions.DataBar.MaxType,
+				MaxValue: conditions.DataBar.MaxValue,
+				BarColor: conditions.DataBar.Color,
+			}
+
+			cf = append(cf, format)
+		}
+
+	case "iconSet":
+		if conditions.IconSet != nil {
+			format := excelize.ConditionalFormatOptions{
+				Type:         "icon_set",
+				IconStyle:    conditions.IconSet.IconStyle,
+				ReverseIcons: conditions.IconSet.Reverse,
+			}
+
+			cf = append(cf, format)
+		}
+	}
+
+	return w.file.SetConditionalFormat(w.sheetName, cellRange, cf)
+}
+
+// createStyleFromFormat creates a style ID from conditional formatting style
+func (w *ExcelizeWorksheet) createStyleFromFormat(format *ConditionalFormattingStyle) (int, error) {
+	style := &excelize.Style{}
+
+	if format.Font != nil {
+		style.Font = &excelize.Font{
+			Bold:   format.Font.Bold,
+			Italic: format.Font.Italic,
+			Size:   float64(format.Font.Size),
+			Color:  format.Font.Color,
+		}
+	}
+
+	if format.Fill != nil && len(format.Fill.Color) > 0 {
+		style.Fill = excelize.Fill{
+			Type:    format.Fill.Type,
+			Pattern: int(format.Fill.Pattern),
+			Color:   format.Fill.Color,
+		}
+	}
+
+	if len(format.Border) > 0 {
+		borders := make([]excelize.Border, len(format.Border))
+		for i, border := range format.Border {
+			borders[i] = excelize.Border{
+				Type:  border.Type,
+				Style: int(border.Style),
+				Color: border.Color,
+			}
+		}
+		style.Border = borders
+	}
+
+	return w.file.NewStyle(style)
+}
+
+// ExecuteVBA executes VBA code (not supported in excelize)
+func (w *ExcelizeWorksheet) ExecuteVBA(vbaCode string) error {
+	return fmt.Errorf("VBA execution is not supported with excelize backend - use OLE backend for VBA functionality")
+}
+
+// AddVBAModule adds a VBA module (not supported in excelize)
+func (w *ExcelizeWorksheet) AddVBAModule(moduleName, vbaCode string) error {
+	return fmt.Errorf("VBA modules are not supported with excelize backend - use OLE backend for VBA functionality")
 }

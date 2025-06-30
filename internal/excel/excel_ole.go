@@ -558,3 +558,316 @@ func normalizePath(path string) string {
 	rest := path[len(vol):]
 	return filepath.Clean(strings.ToUpper(vol) + rest)
 }
+
+// AddDataValidation adds data validation to the specified range using OLE
+func (o *OleWorksheet) AddDataValidation(cellRange string, validationType DataValidationType, options *DataValidationOptions) error {
+	if options == nil {
+		return fmt.Errorf("data validation options cannot be nil")
+	}
+
+	rng := oleutil.MustGetProperty(o.worksheet, "Range", cellRange).ToIDispatch()
+	defer rng.Release()
+
+	validation := oleutil.MustGetProperty(rng, "Validation").ToIDispatch()
+	defer validation.Release()
+
+	switch validationType {
+	case DataValidationList:
+		if len(options.DropdownList) > 0 {
+			// Create dropdown list
+			listString := strings.Join(options.DropdownList, ",")
+			oleutil.MustCallMethod(validation, "Add", 3, listString, 7) // xlValidateList = 3, xlValidAlertStop = 1, xlBetween = 1
+		}
+	case DataValidationWhole:
+		if options.Formula1 != "" {
+			operator := getOleOperator(options.Operator)
+			oleutil.MustCallMethod(validation, "Add", 1, operator, 7, options.Formula1, options.Formula2) // xlValidateWholeNumber = 1
+		}
+	case DataValidationDecimal:
+		if options.Formula1 != "" {
+			operator := getOleOperator(options.Operator)
+			oleutil.MustCallMethod(validation, "Add", 2, operator, 7, options.Formula1, options.Formula2) // xlValidateDecimal = 2
+		}
+	case DataValidationDate:
+		if options.Formula1 != "" {
+			operator := getOleOperator(options.Operator)
+			oleutil.MustCallMethod(validation, "Add", 4, operator, 7, options.Formula1, options.Formula2) // xlValidateDate = 4
+		}
+	case DataValidationTime:
+		if options.Formula1 != "" {
+			operator := getOleOperator(options.Operator)
+			oleutil.MustCallMethod(validation, "Add", 5, operator, 7, options.Formula1, options.Formula2) // xlValidateTime = 5
+		}
+	case DataValidationTextLength:
+		if options.Formula1 != "" {
+			operator := getOleOperator(options.Operator)
+			oleutil.MustCallMethod(validation, "Add", 6, operator, 7, options.Formula1, options.Formula2) // xlValidateTextLength = 6
+		}
+	case DataValidationCustom:
+		if options.Formula1 != "" {
+			oleutil.MustCallMethod(validation, "Add", 7, 1, 7, options.Formula1) // xlValidateCustom = 7
+		}
+	}
+
+	// Set input and error messages if provided
+	if options.ShowInputMessage && options.InputTitle != "" {
+		oleutil.MustPutProperty(validation, "InputTitle", options.InputTitle)
+		oleutil.MustPutProperty(validation, "InputMessage", options.InputMessage)
+		oleutil.MustPutProperty(validation, "ShowInput", true)
+	}
+
+	if options.ShowErrorMessage && options.ErrorTitle != "" {
+		oleutil.MustPutProperty(validation, "ErrorTitle", options.ErrorTitle)
+		oleutil.MustPutProperty(validation, "ErrorMessage", options.ErrorMessage)
+		oleutil.MustPutProperty(validation, "ShowError", true)
+	}
+
+	return nil
+}
+
+// getOleOperator converts string operator to OLE validation operator constant
+func getOleOperator(operator string) int {
+	switch operator {
+	case "between":
+		return 1 // xlBetween
+	case "notBetween":
+		return 2 // xlNotBetween
+	case "equal":
+		return 3 // xlEqual
+	case "notEqual":
+		return 4 // xlNotEqual
+	case "greaterThan":
+		return 5 // xlGreater
+	case "lessThan":
+		return 6 // xlLess
+	case "greaterThanOrEqual":
+		return 7 // xlGreaterEqual
+	case "lessThanOrEqual":
+		return 8 // xlLessEqual
+	default:
+		return 1 // xlBetween
+	}
+}
+
+// AddConditionalFormatting adds conditional formatting to the specified range using OLE
+func (o *OleWorksheet) AddConditionalFormatting(cellRange string, conditions *ConditionalFormattingConditions) error {
+	if conditions == nil {
+		return fmt.Errorf("conditional formatting conditions cannot be nil")
+	}
+
+	rng := oleutil.MustGetProperty(o.worksheet, "Range", cellRange).ToIDispatch()
+	defer rng.Release()
+
+	// Clear existing conditional formatting
+	formatConditions := oleutil.MustGetProperty(rng, "FormatConditions").ToIDispatch()
+	defer formatConditions.Release()
+	oleutil.MustCallMethod(formatConditions, "Delete")
+
+	switch conditions.Type {
+	case "cellValue":
+		operator := getOleConditionalOperator(conditions.Criteria)
+		var condition *ole.IDispatch
+
+		if conditions.Value2 != "" {
+			condition = oleutil.MustCallMethod(formatConditions, "Add", 1, operator, conditions.Value1, conditions.Value2).ToIDispatch() // xlCellValue = 1
+		} else {
+			condition = oleutil.MustCallMethod(formatConditions, "Add", 1, operator, conditions.Value1).ToIDispatch()
+		}
+		defer condition.Release()
+
+		// Apply formatting
+		if conditions.Format != nil {
+			applyOleFormatting(condition, conditions.Format)
+		}
+
+	case "expression":
+		condition := oleutil.MustCallMethod(formatConditions, "Add", 2, conditions.Formula).ToIDispatch() // xlExpression = 2
+		defer condition.Release()
+
+		if conditions.Format != nil {
+			applyOleFormatting(condition, conditions.Format)
+		}
+
+	case "colorScale":
+		if conditions.ColorScale != nil {
+			// Add color scale (Excel 2007+)
+			colorScale := oleutil.MustCallMethod(formatConditions, "AddColorScale", 2).ToIDispatch() // 2 colors
+			defer colorScale.Release()
+
+			colorCriteria := oleutil.MustGetProperty(colorScale, "ColorScaleCriteria").ToIDispatch()
+			defer colorCriteria.Release()
+
+			// Set minimum
+			minCriterion := oleutil.MustGetProperty(colorCriteria, "Item", 1).ToIDispatch()
+			defer minCriterion.Release()
+			oleutil.MustPutProperty(minCriterion, "Type", getOleColorScaleType(conditions.ColorScale.MinType))
+			if conditions.ColorScale.MinValue != "" {
+				oleutil.MustPutProperty(minCriterion, "Value", conditions.ColorScale.MinValue)
+			}
+			r, g, b := parseRGBColor(conditions.ColorScale.MinColor)
+			app := oleutil.MustGetProperty(o.worksheet, "Application").ToIDispatch()
+			defer app.Release()
+			color := oleutil.MustGetProperty(app, "RGB", r, g, b).Value()
+			oleutil.MustPutProperty(minCriterion, "FormatColor", color)
+
+			// Set maximum
+			maxCriterion := oleutil.MustGetProperty(colorCriteria, "Item", 2).ToIDispatch()
+			defer maxCriterion.Release()
+			oleutil.MustPutProperty(maxCriterion, "Type", getOleColorScaleType(conditions.ColorScale.MaxType))
+			if conditions.ColorScale.MaxValue != "" {
+				oleutil.MustPutProperty(maxCriterion, "Value", conditions.ColorScale.MaxValue)
+			}
+			r2, g2, b2 := parseRGBColor(conditions.ColorScale.MaxColor)
+			color2 := oleutil.MustGetProperty(app, "RGB", r2, g2, b2).Value()
+			oleutil.MustPutProperty(maxCriterion, "FormatColor", color2)
+		}
+
+	case "dataBar":
+		if conditions.DataBar != nil {
+			dataBar := oleutil.MustCallMethod(formatConditions, "AddDatabar").ToIDispatch()
+			defer dataBar.Release()
+
+			if conditions.DataBar.Color != "" {
+				r, g, b := parseRGBColor(conditions.DataBar.Color)
+				app := oleutil.MustGetProperty(o.worksheet, "Application").ToIDispatch()
+				defer app.Release()
+				color := oleutil.MustGetProperty(app, "RGB", r, g, b).Value()
+				oleutil.MustPutProperty(dataBar, "BarColor", color)
+			}
+		}
+	}
+
+	return nil
+}
+
+// getOleConditionalOperator converts string criteria to OLE conditional operator constant
+func getOleConditionalOperator(criteria string) int {
+	switch criteria {
+	case "greaterThan":
+		return 5 // xlGreater
+	case "lessThan":
+		return 6 // xlLess
+	case "between":
+		return 1 // xlBetween
+	case "equal":
+		return 3 // xlEqual
+	case "notEqual":
+		return 4 // xlNotEqual
+	case "greaterThanOrEqual":
+		return 7 // xlGreaterEqual
+	case "lessThanOrEqual":
+		return 8 // xlLessEqual
+	default:
+		return 3 // xlEqual
+	}
+}
+
+// getOleColorScaleType converts string type to OLE color scale type constant
+func getOleColorScaleType(scaleType string) int {
+	switch scaleType {
+	case "num":
+		return 0 // xlConditionValueNumber
+	case "percent":
+		return 1 // xlConditionValuePercent
+	case "percentile":
+		return 2 // xlConditionValuePercentile
+	case "formula":
+		return 3 // xlConditionValueFormula
+	case "min":
+		return 4 // xlConditionValueLowestValue
+	case "max":
+		return 5 // xlConditionValueHighestValue
+	default:
+		return 0 // xlConditionValueNumber
+	}
+}
+
+// parseRGBColor parses hex color string to RGB values for OLE
+func parseRGBColor(hexColor string) (int, int, int) {
+	if len(hexColor) == 7 && hexColor[0] == '#' {
+		r, g, b := 0, 0, 0
+		fmt.Sscanf(hexColor[1:3], "%02x", &r)
+		fmt.Sscanf(hexColor[3:5], "%02x", &g)
+		fmt.Sscanf(hexColor[5:7], "%02x", &b)
+		return r, g, b
+	}
+	return 0, 0, 0 // Default to black
+}
+
+// applyOleFormatting applies formatting to a conditional format condition
+func applyOleFormatting(condition *ole.IDispatch, format *ConditionalFormattingStyle) {
+	if format.Font != nil {
+		font := oleutil.MustGetProperty(condition, "Font").ToIDispatch()
+		defer font.Release()
+
+		if format.Font.Bold {
+			oleutil.MustPutProperty(font, "Bold", true)
+		}
+		if format.Font.Italic {
+			oleutil.MustPutProperty(font, "Italic", true)
+		}
+		if format.Font.Color != "" {
+			r, g, b := parseRGBColor(format.Font.Color)
+			app := oleutil.MustGetProperty(condition, "Application").ToIDispatch()
+			defer app.Release()
+			color := oleutil.MustGetProperty(app, "RGB", r, g, b).Value()
+			oleutil.MustPutProperty(font, "Color", color)
+		}
+		if format.Font.Size > 0 {
+			oleutil.MustPutProperty(font, "Size", format.Font.Size)
+		}
+	}
+
+	if format.Fill != nil && len(format.Fill.Color) > 0 {
+		interior := oleutil.MustGetProperty(condition, "Interior").ToIDispatch()
+		defer interior.Release()
+
+		r, g, b := parseRGBColor(format.Fill.Color[0])
+		app := oleutil.MustGetProperty(condition, "Application").ToIDispatch()
+		defer app.Release()
+		color := oleutil.MustGetProperty(app, "RGB", r, g, b).Value()
+		oleutil.MustPutProperty(interior, "Color", color)
+	}
+}
+
+// ExecuteVBA executes VBA code on the worksheet using OLE
+func (o *OleWorksheet) ExecuteVBA(vbaCode string) error {
+	app := oleutil.MustGetProperty(o.workbook, "Application").ToIDispatch()
+	defer app.Release()
+
+	// Execute VBA code using Application.Run or evaluate
+	_, err := oleutil.CallMethod(app, "Evaluate", vbaCode)
+	if err != nil {
+		return fmt.Errorf("failed to execute VBA code: %w", err)
+	}
+
+	return nil
+}
+
+// AddVBAModule adds a VBA module to the workbook using OLE
+func (o *OleWorksheet) AddVBAModule(moduleName, vbaCode string) error {
+	vbProject := oleutil.MustGetProperty(o.workbook, "VBProject").ToIDispatch()
+	defer vbProject.Release()
+
+	vbComponents := oleutil.MustGetProperty(vbProject, "VBComponents").ToIDispatch()
+	defer vbComponents.Release()
+
+	// Add a new standard module (vbext_ct_StdModule = 1)
+	newModule := oleutil.MustCallMethod(vbComponents, "Add", 1).ToIDispatch()
+	defer newModule.Release()
+
+	// Set the module name
+	oleutil.MustPutProperty(newModule, "Name", moduleName)
+
+	// Get the code module
+	codeModule := oleutil.MustGetProperty(newModule, "CodeModule").ToIDispatch()
+	defer codeModule.Release()
+
+	// Add the VBA code
+	lines := strings.Split(vbaCode, "\n")
+	for i, line := range lines {
+		oleutil.MustCallMethod(codeModule, "InsertLines", i+1, line)
+	}
+
+	return nil
+}

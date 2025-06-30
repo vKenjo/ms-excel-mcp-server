@@ -12,10 +12,14 @@ A Model Context Protocol (MCP) server that reads and writes MS Excel data.
 - Read/Write text values
 - Read/Write formulas
 - Create new sheets
+- **✨ NEW: Data validation with dropdown lists**
+- **✨ NEW: Conditional formatting (highlighting, color scales, data bars)**
+- **✨ NEW: VBA code execution and module creation**
 
 **🪟Windows only:**
 - Live editing
 - Capture screen image from a sheet
+- **✨ VBA functionality (OLE backend)**
 
 For more details, see the [tools](#tools) section.
 
@@ -153,6 +157,62 @@ Copy existing sheet to a new sheet
     - Source sheet name in the Excel file
 - `dstSheetName`
     - Sheet name to be copied
+
+### `excel_add_data_validation`
+
+Add data validation to Excel cells including dropdown lists and input validation.
+
+**Arguments:**
+- `fileAbsolutePath`
+    - Absolute path to the Excel file
+- `sheetName`
+    - Sheet name in the Excel file
+- `cellRange`
+    - Range of cells to apply data validation (e.g., "A1:A10")
+- `validationType`
+    - Type of validation: list, whole, decimal, date, time, textLength, custom
+- `options`
+    - Data validation options (dropdownList, formulas, error messages, etc.)
+
+### `excel_add_conditional_formatting`
+
+Add conditional formatting to Excel cells with highlighting, color scales, and data bars.
+
+**Arguments:**
+- `fileAbsolutePath`
+    - Absolute path to the Excel file
+- `sheetName`
+    - Sheet name in the Excel file  
+- `cellRange`
+    - Range of cells to apply conditional formatting (e.g., "A1:A10")
+- `conditions`
+    - Conditional formatting conditions (type, criteria, values, formatting)
+
+### `excel_execute_vba` (Windows OLE only)
+
+Execute VBA code on an Excel worksheet.
+
+**Arguments:**
+- `fileAbsolutePath`
+    - Absolute path to the Excel file
+- `sheetName`
+    - Sheet name in the Excel file
+- `vbaCode`
+    - VBA code to execute
+
+### `excel_add_vba_module` (Windows OLE only)
+
+Add a VBA module to an Excel workbook.
+
+**Arguments:**
+- `fileAbsolutePath`
+    - Absolute path to the Excel file
+- `moduleName`
+    - Name for the VBA module
+- `vbaCode`
+    - VBA code to add to the module
+
+> **Note:** For detailed examples and usage instructions, see [docs/NEW_FEATURES.md](docs/NEW_FEATURES.md)
 
 <h2 id="configuration">Configuration</h2>
 
