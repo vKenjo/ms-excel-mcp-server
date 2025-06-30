@@ -9,6 +9,7 @@ This document describes the new Excel tools added to the MCP server for data val
 Adds data validation to Excel cells including dropdown lists and various validation types.
 
 **Parameters:**
+
 - `fileAbsolutePath` (string, required): Absolute path to the Excel file
 - `sheetName` (string, required): Sheet name in the Excel file
 - `cellRange` (string, required): Range of cells to apply data validation (e.g., "A1:A10")
@@ -23,6 +24,7 @@ Adds data validation to Excel cells including dropdown lists and various validat
 - `options` (object, optional): Data validation options
 
 **Options Object:**
+
 - `dropdownList` (array of strings): List of options for dropdown validation
 - `formula1` (string): First formula for validation criteria
 - `formula2` (string): Second formula for validation criteria (for between/notBetween)
@@ -37,6 +39,7 @@ Adds data validation to Excel cells including dropdown lists and various validat
 - `inputMessage` (string): Input message text
 
 **Example - Dropdown List:**
+
 ```json
 {
   "fileAbsolutePath": "C:\\data\\workbook.xlsx",
@@ -56,6 +59,7 @@ Adds data validation to Excel cells including dropdown lists and various validat
 ```
 
 **Example - Number Range:**
+
 ```json
 {
   "fileAbsolutePath": "C:\\data\\workbook.xlsx",
@@ -80,12 +84,14 @@ Adds data validation to Excel cells including dropdown lists and various validat
 Adds conditional formatting to Excel cells with various formatting types.
 
 **Parameters:**
+
 - `fileAbsolutePath` (string, required): Absolute path to the Excel file
 - `sheetName` (string, required): Sheet name in the Excel file
 - `cellRange` (string, required): Range of cells to apply conditional formatting (e.g., "A1:A10")
 - `conditions` (object, required): Conditional formatting conditions
 
 **Conditions Object:**
+
 - `type` (string): Type of conditional formatting
   - `cellValue`: Cell value based formatting
   - `expression`: Formula/expression based formatting
@@ -104,6 +110,7 @@ Adds conditional formatting to Excel cells with various formatting types.
 - `iconSet` (object): Icon set options
 
 **Format Object:**
+
 - `font` (object): Font formatting
   - `bold` (boolean): Bold text
   - `italic` (boolean): Italic text
@@ -115,6 +122,7 @@ Adds conditional formatting to Excel cells with various formatting types.
 - `border` (array): Border formatting
 
 **Color Scale Object:**
+
 - `minType` (string): Minimum value type (`num`, `percent`, `percentile`, `formula`, `min`, `max`)
 - `minValue` (string): Minimum value
 - `minColor` (string): Minimum color (hex format)
@@ -126,6 +134,7 @@ Adds conditional formatting to Excel cells with various formatting types.
 - `midColor` (string): Middle color
 
 **Data Bar Object:**
+
 - `minType` (string): Minimum value type
 - `minValue` (string): Minimum value
 - `maxType` (string): Maximum value type
@@ -134,6 +143,7 @@ Adds conditional formatting to Excel cells with various formatting types.
 - `showValue` (boolean): Whether to show values
 
 **Example - Highlight Greater Than:**
+
 ```json
 {
   "fileAbsolutePath": "C:\\data\\workbook.xlsx",
@@ -158,6 +168,7 @@ Adds conditional formatting to Excel cells with various formatting types.
 ```
 
 **Example - Color Scale:**
+
 ```json
 {
   "fileAbsolutePath": "C:\\data\\workbook.xlsx",
@@ -176,6 +187,7 @@ Adds conditional formatting to Excel cells with various formatting types.
 ```
 
 **Example - Data Bars:**
+
 ```json
 {
   "fileAbsolutePath": "C:\\data\\workbook.xlsx",
@@ -200,11 +212,13 @@ Adds conditional formatting to Excel cells with various formatting types.
 Executes VBA code on an Excel worksheet (Windows OLE backend only).
 
 **Parameters:**
+
 - `fileAbsolutePath` (string, required): Absolute path to the Excel file
 - `sheetName` (string, required): Sheet name in the Excel file
 - `vbaCode` (string, required): VBA code to execute
 
 **Example:**
+
 ```json
 {
   "fileAbsolutePath": "C:\\data\\workbook.xlsx",
@@ -218,11 +232,13 @@ Executes VBA code on an Excel worksheet (Windows OLE backend only).
 Adds a VBA module to an Excel workbook (Windows OLE backend only).
 
 **Parameters:**
+
 - `fileAbsolutePath` (string, required): Absolute path to the Excel file
 - `moduleName` (string, required): Name for the VBA module
 - `vbaCode` (string, required): VBA code to add to the module
 
 **Example:**
+
 ```json
 {
   "fileAbsolutePath": "C:\\data\\workbook.xlsx",
@@ -241,6 +257,7 @@ Adds a VBA module to an Excel workbook (Windows OLE backend only).
 | VBA Modules | ❌ | ✅ |
 
 **Notes:**
+
 - VBA functionality is only supported on Windows with the OLE backend
 - The excelize backend will return an error for VBA-related operations
 - Data validation and conditional formatting work on both backends but may have different feature sets
@@ -249,6 +266,7 @@ Adds a VBA module to an Excel workbook (Windows OLE backend only).
 ## Error Handling
 
 All tools return appropriate error messages for:
+
 - Invalid file paths
 - Missing sheets
 - Invalid cell ranges
