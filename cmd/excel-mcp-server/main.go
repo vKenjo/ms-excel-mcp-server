@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/negokaz/excel-mcp-server/internal/server"
+	"github.com/vKenjo/ms-excel-mcp-server/internal/server"
 )
 
 var (

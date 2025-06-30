@@ -4,3 +4,12 @@
 /go.mod
 /go.sum
 /.goreleaser.yaml
+/scripts
+/docs
+/launcher
+*.md
+!README.md
+Dockerfile
+smithery.yaml
+tsconfig.json
+excel-mcp-server.exe

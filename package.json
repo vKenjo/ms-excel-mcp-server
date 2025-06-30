@@ -1,12 +1,17 @@
 {
   "name": "ms-excel-mcp-server",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "An MCP server that reads and writes spreadsheet data to MS Excel file",
   "author": "vKenjo",
   "license": "MIT",
   "bin": {
     "excel-mcp-server": "dist/launcher.js"
   },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "goreleaser build --snapshot --clean && tsc",
     "watch": "tsc --watch",

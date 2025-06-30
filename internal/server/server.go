@@ -4,7 +4,7 @@ import (
 	"runtime"
 
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/negokaz/excel-mcp-server/internal/tools"
+	"github.com/vKenjo/ms-excel-mcp-server/internal/tools"
 )
 
 type ExcelServer struct {
