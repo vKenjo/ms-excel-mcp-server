@@ -1,8 +1,8 @@
 {
-  "name": "@negokaz/excel-mcp-server",
+  "name": "@vKenjo/excel-mcp-server",
   "version": "0.11.0",
   "description": "An MCP server that reads and writes spreadsheet data to MS Excel file",
-  "author": "negokaz",
+  "author": "vKenjo",
   "license": "MIT",
   "bin": {
     "excel-mcp-server": "dist/launcher.js"
