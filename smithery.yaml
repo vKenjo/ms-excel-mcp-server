@@ -8,4 +8,4 @@ startCommand:
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({ command: 'excel-mcp-server', args: [], env: { NODE_ENV: 'production' } })
+    (config) => ({ command: './excel-mcp-server', args: [], env: { NODE_ENV: 'production' } })

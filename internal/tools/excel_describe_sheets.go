@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	z "github.com/Oudwins/zog"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -63,10 +64,10 @@ type PivotTable struct {
 func describeSheets(fileAbsolutePath string) (*mcp.CallToolResult, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			// Log the panic but return a proper error instead of crashing
+			log.Printf("Panic in describeSheets: %v", r)
 		}
 	}()
-	
+
 	config, issues := LoadConfig()
 	if issues != nil {
 		return imcp.NewToolResultZogIssueMap(issues), nil

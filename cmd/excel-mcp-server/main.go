@@ -20,7 +20,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	
+
 	s := server.New(version)
 	err := s.Start()
 	if err != nil {
