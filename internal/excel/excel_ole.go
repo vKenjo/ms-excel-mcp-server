@@ -28,10 +28,13 @@ func NewExcelOle(absolutePath string) (*OleExcel, func(), error) {
 
 	unknown, err := oleutil.GetActiveObject("Excel.Application")
 	if err != nil {
+		ole.CoUninitialize()
 		return nil, func() {}, err
 	}
 	excel, err := unknown.QueryInterface(ole.IID_IDispatch)
 	if err != nil {
+		unknown.Release()
+		ole.CoUninitialize()
 		return nil, func() {}, err
 	}
 	oleutil.MustPutProperty(excel, "ScreenUpdating", false)
@@ -76,15 +79,21 @@ func NewExcelOleWithNewObject(absolutePath string) (*OleExcel, func(), error) {
 
 	unknown, err := oleutil.CreateObject("Excel.Application")
 	if err != nil {
+		ole.CoUninitialize()
 		return nil, func() {}, err
 	}
 	excel, err := unknown.QueryInterface(ole.IID_IDispatch)
 	if err != nil {
+		unknown.Release()
+		ole.CoUninitialize()
 		return nil, func() {}, err
 	}
 	workbooks := oleutil.MustGetProperty(excel, "Workbooks").ToIDispatch()
 	workbook, err := oleutil.CallMethod(workbooks, "Open", absolutePath)
 	if err != nil {
+		workbooks.Release()
+		excel.Release()
+		ole.CoUninitialize()
 		return nil, func() {}, err
 	}
 	w := workbook.ToIDispatch()

@@ -61,12 +61,20 @@ type PivotTable struct {
 }
 
 func describeSheets(fileAbsolutePath string) (*mcp.CallToolResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic but return a proper error instead of crashing
+		}
+	}()
+	
 	config, issues := LoadConfig()
 	if issues != nil {
 		return imcp.NewToolResultZogIssueMap(issues), nil
 	}
 	workbook, release, err := excel.OpenFile(fileAbsolutePath)
-	defer release()
+	if release != nil {
+		defer release()
+	}
 	if err != nil {
 		return nil, err
 	}

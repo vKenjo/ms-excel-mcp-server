@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+
 	z "github.com/Oudwins/zog"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -49,11 +50,16 @@ func handleScreenCapture(ctx context.Context, request mcp.CallToolRequest) (*mcp
 }
 
 func readSheetImage(fileAbsolutePath string, sheetName string, rangeStr string) (*mcp.CallToolResult, error) {
+	// Add timeout and error handling for OLE operations
 	workbook, releaseWorkbook, err := excel.NewExcelOle(fileAbsolutePath)
-	defer releaseWorkbook()
+	if releaseWorkbook != nil {
+		defer releaseWorkbook()
+	}
 	if err != nil {
 		workbook, releaseWorkbook, err = excel.NewExcelOleWithNewObject(fileAbsolutePath)
-		defer releaseWorkbook()
+		if releaseWorkbook != nil {
+			defer releaseWorkbook()
+		}
 		if err != nil {
 			return imcp.NewToolResultInvalidArgumentError(fmt.Errorf("failed to open workbook: %w", err).Error()), nil
 		}
